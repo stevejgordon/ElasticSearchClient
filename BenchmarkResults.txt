@@ -1,0 +1,11 @@
+                  Method |     Mean |    Error |   StdDev | Gen 0/1k Op | Gen 1/1k Op | Gen 2/1k Op | Allocated Memory/Op |
+------------------------ |---------:|---------:|---------:|------------:|------------:|------------:|--------------------:|
+           CreateRequest | 246.8 us | 4.873 us | 9.272 us |           - |           - |           - |              1760 B |
+ ContentStreamManualTest | 241.5 us | 4.812 us | 8.301 us |           - |           - |           - |               328 B |
+
+
+
+             Method |               stream |         Mean |        Error |      StdDev | Gen 0/1k Op | Gen 1/1k Op | Gen 2/1k Op | Allocated Memory/Op |
+------------------- |--------------------- |-------------:|-------------:|------------:|------------:|------------:|------------:|--------------------:|
+ ParseErrorResponse | ErrorResponse        | 133,583.7 ns | 1,688.389 ns | 1,579.32 ns |      3.6621 |           - |           - |             16152 B |
+ ParseErrorResponse | SuccessResponse      |     433.6 ns |     8.704 ns |    15.92 ns |      0.0191 |           - |           - |                80 B |
