@@ -11,9 +11,7 @@ namespace ElasticSearch.LowLevel
 {
     public class BulkRequest : IDisposable
     {
-        private bool disposed = false;
-
-        private const int GuidLength = 36;
+        private bool disposed = false;              
 
         private static readonly byte[] _newLineBytes = new byte[] { (byte)'\n' };
         private static readonly byte[] _bulkApiIndexActionTemplateWithoutId;
@@ -22,24 +20,21 @@ namespace ElasticSearch.LowLevel
         private static readonly MediaTypeWithQualityHeaderValue _applicationJsonHeader = new MediaTypeWithQualityHeaderValue("application/json");
         private static readonly StringWithQualityHeaderValue _gzipHeader = new StringWithQualityHeaderValue("gzip");
         private static readonly StringWithQualityHeaderValue _deflateHeader = new StringWithQualityHeaderValue("deflate");
+        private static readonly ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
 
         static BulkRequest()
         {
             ReadOnlySpan<char> startBytes = "{\"index\":{\"_id\":\"".AsSpan();
             ReadOnlySpan<char> endBytes = "\"}}".AsSpan();                      
 
-            _bulkApiIndexActionTemplateWithoutId = new byte[startBytes.Length + GuidLength + endBytes.Length];
+            _bulkApiIndexActionTemplateWithoutId = new byte[startBytes.Length + ApplicationConstants.GuidLength + endBytes.Length];
 
             Encoding.UTF8.GetBytes(startBytes, _bulkApiIndexActionTemplateWithoutId.AsSpan());
             _endBytesLength = Encoding.UTF8.GetBytes(endBytes, _bulkApiIndexActionTemplateWithoutId.AsSpan(_bulkApiIndexActionTemplateWithoutId.Length - endBytes.Length));
         }
 
         private MemoryStream contentStream;
-
-        private bool _contentAttached = false;
-
-        private static ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
-
+        private bool _contentAttached = false;        
         private byte[] _streamBuffer;
 
         public void AttachContentStream(IList<BulkIndexItem> itemsToIndex)
@@ -48,7 +43,7 @@ namespace ElasticSearch.LowLevel
 
             foreach (var item in itemsToIndex)
             {
-                bytesNeeded += _bulkApiIndexActionTemplateWithoutId.Length + GuidLength;
+                bytesNeeded += _bulkApiIndexActionTemplateWithoutId.Length + ApplicationConstants.GuidLength;
                 bytesNeeded += item.Data.Length;
             }
 
@@ -67,7 +62,7 @@ namespace ElasticSearch.LowLevel
                 {
                     _bulkApiIndexActionTemplateWithoutId.CopyTo(indexAction);
 
-                    item.Id.Span.CopyTo(indexAction.Slice(_bulkApiIndexActionTemplateWithoutId.Length - GuidLength - _endBytesLength));
+                    item.Id.Span.CopyTo(indexAction.Slice(_bulkApiIndexActionTemplateWithoutId.Length - ApplicationConstants.GuidLength - _endBytesLength));
 
                     gzipStream.Write(indexAction);
 
@@ -88,7 +83,7 @@ namespace ElasticSearch.LowLevel
 
             foreach (var (_, Data) in itemsToIndex)
             {
-                bytesNeeded += _bulkApiIndexActionTemplateWithoutId.Length + GuidLength;
+                bytesNeeded += _bulkApiIndexActionTemplateWithoutId.Length + ApplicationConstants.GuidLength;
                 bytesNeeded += Data.Length;
             }
 
@@ -104,7 +99,7 @@ namespace ElasticSearch.LowLevel
                 {
                     _bulkApiIndexActionTemplateWithoutId.CopyTo(indexAction);
 
-                    Encoding.UTF8.GetBytes(Id.Span, indexAction.Slice(_bulkApiIndexActionTemplateWithoutId.Length - GuidLength - _endBytesLength));
+                    Encoding.UTF8.GetBytes(Id.Span, indexAction.Slice(_bulkApiIndexActionTemplateWithoutId.Length - ApplicationConstants.GuidLength - _endBytesLength));
 
                     gzipStream.Write(indexAction);
 
@@ -157,7 +152,8 @@ namespace ElasticSearch.LowLevel
 
             if (disposing)
             {
-                _arrayPool.Return(_streamBuffer);
+                if (_streamBuffer != null)
+                    _arrayPool.Return(_streamBuffer);
             }
 
             disposed = true;
