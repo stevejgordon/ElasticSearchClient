@@ -33,6 +33,9 @@ namespace ElasticSearchClient.SampleConsumer
 
             // end - setup some sample data
 
+            Console.WriteLine("Ready!!");
+            Console.ReadKey();
+
             var client = new HttpClient(handler);
 
             using (var request = new BulkRequest())
@@ -49,6 +52,9 @@ namespace ElasticSearchClient.SampleConsumer
                     }
                 }
             }
+
+            Console.WriteLine("Done!!");
+            Console.ReadKey();
         }
     }
 }
