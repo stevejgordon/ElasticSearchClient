@@ -13,10 +13,7 @@ namespace Benchmarks
 {
     public class Program
     {
-        public static async Task Main(string[] args)
-        {
-            var summary = BenchmarkRunner.Run<BulkResponseParserBenchmarks>();
-        }
+        public static void Main(string[] args) => _ = BenchmarkRunner.Run<BulkResponseParserBenchmarks>();
     }
 
     [MemoryDiagnoser]
@@ -28,12 +25,12 @@ namespace Benchmarks
         [GlobalSetup]
         public void Setup()
         {
-            using (FileStream fs = File.OpenRead(AppDomain.CurrentDomain.BaseDirectory + "/FailedResponseSample.txt"))
+            using (var fs = File.OpenRead(AppDomain.CurrentDomain.BaseDirectory + "/FailedResponseSample.txt"))
             {
                 fs.CopyTo(_errorStream);
             }
 
-            using (FileStream fs = File.OpenRead(AppDomain.CurrentDomain.BaseDirectory + "/SuccessResponseSample.txt"))
+            using (var fs = File.OpenRead(AppDomain.CurrentDomain.BaseDirectory + "/SuccessResponseSample.txt"))
             {
                 fs.CopyTo(_successStream);
             }
@@ -45,11 +42,11 @@ namespace Benchmarks
             yield return _successStream;
         }
 
-        [Benchmark]
+        [Benchmark(Baseline = true)]
         [ArgumentsSource(nameof(Streams))]
-        public async Task ParseErrorResponse(Stream stream)
+        public async Task ParseResponse(Stream stream)
         {
-            stream.Seek(0, SeekOrigin.Begin);
+            stream.Position = 0;
 
             await BulkResponseParser.FromStreamAsync(stream);
         }

@@ -2,7 +2,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,14 +10,12 @@ namespace ElasticSearch.LowLevel
 {
     public static class BulkResponseParser
     {
-        private static readonly byte[] errorsPropertyNameBytes = Encoding.UTF8.GetBytes("errors");
-        private static readonly byte[] idPropertyNameBytes = Encoding.UTF8.GetBytes("_id");
-        private static readonly byte[] statusPropertyNameBytes = Encoding.UTF8.GetBytes("status");
+        private static ReadOnlySpan<byte> ErrorsPropertyNameBytes => new[] { (byte)'e', (byte)'r', (byte)'r', (byte)'o', (byte)'r', (byte)'s' };
+        private static ReadOnlySpan<byte> IdPropertyNameBytes => new[] { (byte)'_', (byte)'i', (byte)'d' };
+        private static ReadOnlySpan<byte> StatusPropertyNameBytes => new[] { (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
 
         public static async Task<(bool success, IEnumerable<string> failedIds)> FromStreamAsync(Stream stream, CancellationToken cancellationToken = default)
         {
-            // tried starting small as we hope to parse a success on the happy path and avoid reading the whole stream.
-            // then grew if error - but this didn't seem to improve perf
             var buffer = ArrayPool<byte>.Shared.Rent(1024);
 
             JsonReaderState state = default;
@@ -51,7 +48,7 @@ namespace ElasticSearch.LowLevel
 
                     if (leftOver != 0)
                     {
-                        buffer.AsSpan(dataSize - leftOver).CopyTo(buffer);                        
+                        buffer.AsSpan(dataSize - leftOver).CopyTo(buffer);
                     }
 
                     if (isFinalBlock)
@@ -63,16 +60,16 @@ namespace ElasticSearch.LowLevel
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
-            }    
+            }
 
             return (!hasErrors, errors);
         }
-               
-        public static JsonReaderState ParseErrors(ReadOnlySpan<byte> dataUtf8, bool isFinalBlock, JsonReaderState state, 
+
+        public static JsonReaderState ParseErrors(ReadOnlySpan<byte> dataUtf8, bool isFinalBlock, JsonReaderState state,
             ref bool foundErrorsProperty, ref bool hasErrors, ref bool insideMainObject, ref bool insideItemsArray, ref List<string> errors)
         {
             var json = new Utf8JsonReader(dataUtf8, isFinalBlock, state);
-                       
+
             var startObjectCount = 0; // risky if we've partially read into an object - rethink this - probably have a parsing state struct
             var idPropertyFound = false;
             string currentEventId = null;
@@ -98,18 +95,18 @@ namespace ElasticSearch.LowLevel
                         break;
 
                     case JsonTokenType.PropertyName:
-                        if (json.ValueSpan.SequenceEqual(errorsPropertyNameBytes))
+                        if (json.ValueSpan.SequenceEqual(ErrorsPropertyNameBytes))
                         {
                             foundErrorsProperty = true;
                         }
 
                         if (startObjectCount == 2)
                         {
-                            if (json.ValueSpan.SequenceEqual(idPropertyNameBytes))
+                            if (json.ValueSpan.SequenceEqual(IdPropertyNameBytes))
                             {
                                 idPropertyFound = true;
                             }
-                            if (json.ValueSpan.SequenceEqual(statusPropertyNameBytes))
+                            if (json.ValueSpan.SequenceEqual(StatusPropertyNameBytes))
                             {
                                 statusPropertyFound = true;
                             }

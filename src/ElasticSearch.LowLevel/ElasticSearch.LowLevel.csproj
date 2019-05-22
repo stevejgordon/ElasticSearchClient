@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-	<Optimize>true</Optimize>
   </PropertyGroup>
 
 </Project>
